@@ -131,7 +131,8 @@ namespace Td.Kylin.Files.Core
                             cutHeight = (int)(toHeight * multipleWidth);
 
                             cutX = 0;
-                            cutY = (originaHeight - cutHeight) / 2;
+                            cutY = cutY.HasValue ? cutY : (originaHeight - cutHeight) / 2;
+                            if (cutY < 0) cutY = 0;
                         }
                         else
                         {
@@ -148,7 +149,8 @@ namespace Td.Kylin.Files.Core
                             cutWidth = (int)(toWidth * multipleHeight);
                             cutHeight = originaHeight;
 
-                            cutX = (originaWidth - cutWidth) / 2;
+                            cutX = cutX.HasValue ? cutX : (originaWidth - cutWidth) / 2;
+                            if (cutX < 0) cutX = 0;
                             cutY = 0;
                         }
                         else
@@ -164,8 +166,8 @@ namespace Td.Kylin.Files.Core
 
             if (!cut)
             {
-                drawX = (toWidth - cutWidth.Value)/2;
-                drawY = (toHeight - cutHeight.Value)/2;
+                drawX = (toWidth - cutWidth.Value) / 2;
+                drawY = (toHeight - cutHeight.Value) / 2;
 
                 drawW = cutWidth.Value;
                 drawH = cutHeight.Value;
@@ -188,7 +190,7 @@ namespace Td.Kylin.Files.Core
 
             g.SmoothingMode = SmoothingMode.HighQuality;
 
-            g.Clear(Color.White);
+            g.Clear(Color.Transparent);
 
             g.DrawImage(originaImage, new Rectangle(drawX, drawY, drawW, drawH), new Rectangle(cutX.Value, cutY.Value, cutWidth.Value, cutHeight.Value), GraphicsUnit.Pixel);
 
