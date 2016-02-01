@@ -90,7 +90,7 @@ namespace Td.Kylin.Files.Core
 
                 int h = int.Parse(m.Groups["height"].Value);
 
-                ThumbHelper.MakeThumbnail(originalFileName, fileName, w, h, 0, 0, null, null, true);
+                ThumbHelper.MakeThumbnailByAutoCut(originalFileName, fileName, w, h);
             }
             catch
             {

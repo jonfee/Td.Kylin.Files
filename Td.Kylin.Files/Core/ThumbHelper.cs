@@ -90,10 +90,41 @@ namespace Td.Kylin.Files.Core
         /// <param name="originaWidth">原始宽度</param>
         /// <param name="originaHeight">原始高度</param>
         /// <param name="cut">是否切割多余部分，为 False 则保留原图所有部分，不足的部分填白。</param>
+        public static void MakeThumbnailByAutoCut(string originaFile, string thumbnailFile, int toWidth, int toHeight)
+        {
+            Image originaImage = Image.FromFile(originaFile);
+
+            bool needCut = ((double)originaImage.Width / (double)originaImage.Height) != ((double)toWidth / (double)toHeight);
+
+            int originaWidth;
+            int originaHeight;
+
+            MakeThumbnail(originaImage, originaFile, thumbnailFile, toWidth, toHeight, 0, 0, null, null, out originaWidth, out originaHeight, needCut);
+        }
+
+        /// <summary>
+        /// 生成缩略图
+        /// </summary>
+        /// <param name="originaFile">文件名称和路径</param>
+        /// <param name="thumbnailFile">缩略图文件名称和路径</param>
+        /// <param name="toWidth">缩略图宽度</param>
+        /// <param name="toHeight">缩略图高度</param>
+        /// <param name="cutX">切割的 X 坐标</param>
+        /// <param name="cutY">切割的 Y 坐标</param>
+        /// <param name="cutWidth">切割的宽度</param>
+        /// <param name="cutHeight">切割的高度</param>
+        /// <param name="originaWidth">原始宽度</param>
+        /// <param name="originaHeight">原始高度</param>
+        /// <param name="cut">是否切割多余部分，为 False 则保留原图所有部分，不足的部分填白。</param>
         public static void MakeThumbnail(string originaFile, string thumbnailFile, int toWidth, int toHeight, int? cutX, int? cutY, int? cutWidth, int? cutHeight, out int originaWidth, out int originaHeight, bool cut)
         {
             Image originaImage = Image.FromFile(originaFile);
 
+            MakeThumbnail(originaImage, originaFile, thumbnailFile, toWidth, toHeight, cutX, cutY, cutWidth, cutHeight, out originaWidth, out originaHeight, cut);
+        }
+
+        static void MakeThumbnail(Image originaImage, string originaFile, string thumbnailFile, int toWidth, int toHeight, int? cutX, int? cutY, int? cutWidth, int? cutHeight, out int originaWidth, out int originaHeight, bool cut)
+        {
             originaWidth = originaImage.Width; originaHeight = originaImage.Height;
 
             if (originaWidth == toWidth && originaHeight == toHeight)
