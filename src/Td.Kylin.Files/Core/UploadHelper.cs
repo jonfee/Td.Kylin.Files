@@ -572,10 +572,7 @@ namespace Td.Kylin.Files.Core
             {
                 using (FileStream fs = File.Create(rawFilePath))
                 {
-                    file.CopyToAsync(fs);
-
-                    fs.Flush();
-                    fs.Dispose();
+                   file.CopyToAsync(fs).Wait();
                 }
 
                 result.FilePath = absFileName;
