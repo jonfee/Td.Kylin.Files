@@ -17,6 +17,11 @@ namespace Td.Kylin.Files.Controllers
     public class UploadifyController : Controller
     {
         /// <summary>
+        /// Base64文件内容检测正则
+        /// </summary>
+        private static Regex _regexBase64 = new Regex(@"^(?:(data:[^;]+;base64,)?)(?<content>.+)$", RegexOptions.IgnoreCase);
+
+        /// <summary>
         /// 上传文件
         /// </summary>
         /// <param name="savepath">文件存储目录</param>
@@ -51,19 +56,18 @@ namespace Td.Kylin.Files.Controllers
             #endregion
 
             #region Form.Base64 文件
-            Regex reg = new Regex(@"^(?:(data:(?<contenttype>[^;]+);base64,)?(?<content>.+=+))$", RegexOptions.IgnoreCase);
             Dictionary<string, string> base64Dictionary = new Dictionary<string, string>();
 
             var formCollection = Request.Form;
 
             foreach (var fc in formCollection)
             {
-                if (reg.IsMatch(fc.Value))
+                if (_regexBase64.IsMatch(fc.Value))
                 {
                     base64Dictionary.Add(fc.Key, fc.Value);
                 }
             }
-            foreach(var file in base64Dictionary)
+            foreach (var file in base64Dictionary)
             {
                 var itemResult = UploadItemByBase64(file.Value, file.Key, savepath, fixedpath, name, extension, beOverride, compressIfGreaterSize, maxWidth, maxHeight, cutIfOut);
 
@@ -115,15 +119,13 @@ namespace Td.Kylin.Files.Controllers
         private UploadResult UploadItemByBase64(string data, string fieldName, string savepath, bool fixedpath = true, string name = null, string extension = null, bool beOverride = false, long compressIfGreaterSize = 0, int maxWidth = 0, int maxHeight = 0, bool cutIfOut = false)
         {
             UploadResult result = new UploadResult();
-
-            Regex reg = new Regex(@"^(data:(?<contenttype>[^;]+);base64,)?(?<content>.+=+)$", RegexOptions.IgnoreCase);
-
-            Match m = reg.Match(data ?? string.Empty);
+            
+            Match m = _regexBase64.Match(data ?? string.Empty);
 
             if (m.Success)
             {
                 string content = m.Groups["content"].Value;
-                
+
                 //文件内容长度
                 long fileLength = 0;
 
