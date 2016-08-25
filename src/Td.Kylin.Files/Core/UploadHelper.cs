@@ -198,9 +198,6 @@ namespace Td.Kylin.Files.Core
             string saveMark = "保存文件";
             try
             {
-                if (maxWidth > image.Width) maxWidth = image.Width;
-                if (maxHeight > image.Height) maxHeight = image.Height;
-
                 //是否超出图片限制尺寸
                 bool needCrop = (maxWidth > 0 || maxHeight > 0) && (image.Width > maxWidth || image.Height > maxHeight);
 
@@ -208,23 +205,8 @@ namespace Td.Kylin.Files.Core
                 if (needCrop)
                 {
                     saveMark = "压缩尺寸（含质量）存储";
-                    //计算应压缩的宽高
-                    int toW = image.Width;
-                    int toH = image.Height;
-                    double multipleW = (double)maxWidth / (double)image.Width;
-                    double multipleH = (double)maxHeight / (double)image.Height;
 
-                    if (multipleW > multipleH)
-                    {
-                        toH = maxHeight;
-                        toW = (int)(image.Width * multipleH);
-                    }
-                    else
-                    {
-                        toW = maxWidth;
-                        toH = (int)(image.Height * multipleW);
-                    }
-                    image.ImageCrop(rawFilePath, toW, toH, null, null, null, null, cutIfOut);
+                    image.ImageCrop(rawFilePath, maxWidth, maxHeight, true, null, null, null, null, cutIfOut);
                 }
                 else
                 {
@@ -268,18 +250,19 @@ namespace Td.Kylin.Files.Core
         /// <param name="savePath">缩略图文件名称和路径</param>
         /// <param name="toWidth">缩略图宽度</param>
         /// <param name="toHeight">缩略图高度</param>
+        /// <param name="lessOrEqualOrginSize">是否必须小于或等于原图尺寸</param>
         /// <param name="cutX">切割的 X 坐标</param>
         /// <param name="cutY">切割的 Y 坐标</param>
         /// <param name="cutW">切割的宽度</param>
         /// <param name="cutH">切割的高度</param>
         /// <param name="cut">是否切割多余部分，为 False 则保留原图所有部分，不足的部分填白。</param>
-        public static UploadResult ImageCrop(this string filePath, string savePath, int toWidth, int toHeight, int? cutX, int? cutY, int? cutW, int? cutH, bool cut)
+        public static UploadResult ImageCrop(this string filePath, string savePath, int toWidth, int toHeight, bool lessOrEqualOrginSize, int? cutX, int? cutY, int? cutW, int? cutH, bool cut)
         {
             try
             {
                 Image origin = Image.FromFile(filePath);
 
-                return origin.ImageCrop(savePath, toWidth, toHeight, cutX, cutY, cutW, cutH, cut);
+                return origin.ImageCrop(savePath, toWidth, toHeight, lessOrEqualOrginSize, cutX, cutY, cutW, cutH, cut);
             }
             catch
             {
@@ -297,12 +280,13 @@ namespace Td.Kylin.Files.Core
         /// <param name="savePath">缩略图文件名称和路径</param>
         /// <param name="toWidth">缩略图宽度</param>
         /// <param name="toHeight">缩略图高度</param>
+        /// <param name="lessOrEqualOrginSize">是否必须小于或等于原图尺寸</param>
         /// <param name="cutX">切割的 X 坐标</param>
         /// <param name="cutY">切割的 Y 坐标</param>
         /// <param name="cutW">切割的宽度</param>
         /// <param name="cutH">切割的高度</param>
         /// <param name="cut">是否切割多余部分，为 False 则保留原图所有部分，不足的部分填白。</param>
-        public static UploadResult ImageCrop(this Image origin, string savePath, int toWidth, int toHeight, int? cutX, int? cutY, int? cutW, int? cutH, bool cut)
+        public static UploadResult ImageCrop(this Image origin, string savePath, int toWidth, int toHeight, bool lessOrEqualOrginSize, int? cutX, int? cutY, int? cutW, int? cutH, bool cut)
         {
             if (origin == null) throw new ArgumentNullException(nameof(origin), "缩略图原始文件不能为空");
 
@@ -325,129 +309,171 @@ namespace Td.Kylin.Files.Core
                 return result;
             }
 
-            int drawX = 0; int drawY = 0; int drawW = toWidth; int drawH = toHeight;
-            if (!cutX.HasValue || !cutY.HasValue || !cutW.HasValue || !cutH.HasValue)
+            #region 校正压缩尺寸
+
+            //压缩宽高均为0时，保持原图尺寸
+            if (toWidth <= 0 && toWidth <= 0)
             {
-                if (origin.Width == toWidth && origin.Height == toHeight)
+                toWidth = origin.Width;
+                toHeight = origin.Height;
+            }
+            else
+            {
+                //必须小于或等于原图尺寸限制时处理
+                if (lessOrEqualOrginSize)
                 {
-                    origin.Save(savePath);
-                    result.FilePath = savePath.GetFilePathByRawDirection();
-                    return result;
+                    if (toWidth > origin.Width) toWidth = origin.Width;//缩略图宽最大为原始图片宽
+                    if (toHeight > origin.Height) toHeight = origin.Height;//缩略图高最大为原始图片高
                 }
 
-                if (origin.Width < toWidth && origin.Height < toHeight)
+                //计算应压缩的宽高
+                double multipleW = (double)toWidth / (double)origin.Width;
+                double multipleH = (double)toHeight / (double)origin.Height;
+
+                if (multipleW == 0)
                 {
-                    cutW = origin.Width; cutH = origin.Height; cutX = cutY = 0;
-                    drawX = (toWidth - origin.Width) / 2;
-                    drawY = (toHeight - origin.Height) / 2;
-
-                    drawW = origin.Width; drawH = origin.Height;
-
+                    toWidth = (int)(origin.Width * multipleH);
                 }
-                else
+                else if (multipleH == 0)
                 {
-                    double multipleWidth = (double)origin.Width / (double)toWidth;
-                    double multipleHeight = (double)origin.Height / (double)toHeight;
+                    toHeight = (int)(origin.Height * multipleW);
+                }
+                else if (multipleW > multipleH)
+                {
+                    toWidth = (int)(origin.Width * multipleH);
+                }
+                else if (multipleH > multipleW)
+                {
+                    toHeight = (int)(origin.Height * multipleW);
+                }
+            }
 
-                    if (multipleWidth < multipleHeight)
+            #endregion
+
+            if (origin.Width == toWidth && origin.Height == toHeight)
+            {
+                origin.Save(savePath);
+                result.FilePath = savePath.GetFilePathByRawDirection();
+            }
+            else
+            {
+                int drawX = 0; int drawY = 0; int drawW = toWidth; int drawH = toHeight;
+                if (!cutX.HasValue || !cutY.HasValue || !cutW.HasValue || !cutH.HasValue)
+                {
+                    if (origin.Width < toWidth && origin.Height < toHeight)
                     {
-                        if (cut)
-                        {
-                            cutW = origin.Width;
-                            cutH = (int)(toHeight * multipleWidth);
+                        cutW = origin.Width; cutH = origin.Height; cutX = cutY = 0;
+                        drawX = (toWidth - origin.Width) / 2;
+                        drawY = (toHeight - origin.Height) / 2;
 
-                            cutX = 0;
-                            cutY = (origin.Height - cutH) / 2;
-                        }
-                        else
-                        {
-                            cutH = toHeight;
-                            cutW = (int)(origin.Width / multipleHeight);
+                        drawW = origin.Width; drawH = origin.Height;
 
-                            cutX = cutY = 0;
-                        }
                     }
                     else
                     {
-                        if (cut)
-                        {
-                            cutW = (int)(toWidth * multipleHeight);
-                            cutH = origin.Height;
+                        double multipleWidth = (double)origin.Width / (double)toWidth;
+                        double multipleHeight = (double)origin.Height / (double)toHeight;
 
-                            cutX = (origin.Width - cutW) / 2;
-                            cutY = 0;
+                        if (multipleWidth < multipleHeight)
+                        {
+                            if (cut)
+                            {
+                                cutW = origin.Width;
+                                cutH = (int)(toHeight * multipleWidth);
+
+                                cutX = 0;
+                                cutY = (origin.Height - cutH) / 2;
+                            }
+                            else
+                            {
+                                cutH = toHeight;
+                                cutW = (int)(origin.Width / multipleHeight);
+
+                                cutX = cutY = 0;
+                            }
                         }
                         else
                         {
-                            cutH = (int)(origin.Height / multipleWidth);
-                            cutW = toWidth;
+                            if (cut)
+                            {
+                                cutW = (int)(toWidth * multipleHeight);
+                                cutH = origin.Height;
 
-                            cutX = cutY = 0;
+                                cutX = (origin.Width - cutW) / 2;
+                                cutY = 0;
+                            }
+                            else
+                            {
+                                cutH = (int)(origin.Height / multipleWidth);
+                                cutW = toWidth;
+
+                                cutX = cutY = 0;
+                            }
                         }
                     }
                 }
-            }
-            if (!cut)
-            {
-                drawX = (toWidth - cutW.Value) / 2;
-                drawY = (toHeight - cutH.Value) / 2;
-
-                drawW = cutW.Value;
-                drawH = cutH.Value;
-
-                cutW = origin.Width;
-                cutH = origin.Height;
-            }
-
-            #region 创建缩略图
-
-            Image bitmap = new Bitmap(toWidth, toHeight);
-
-            Graphics g = Graphics.FromImage(bitmap);
-
-            g.CompositingQuality = CompositingQuality.HighQuality;
-
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-
-            g.SmoothingMode = SmoothingMode.HighQuality;
-
-            g.Clear(Color.White);
-
-            g.DrawImage(origin, new Rectangle(drawX, drawY, drawW, drawH), new Rectangle(cutX.Value, cutY.Value, cutW.Value, cutH.Value), GraphicsUnit.Pixel);
-
-            #endregion
-
-            #region 保存缩略图
-
-            try
-            {
-                if (origin.RawFormat.Guid == ImageFormat.Gif.Guid)
+                if (!cut)
                 {
-                    bitmap.Save(savePath, ImageFormat.Gif);
+                    drawX = (toWidth - cutW.Value) / 2;
+                    drawY = (toHeight - cutH.Value) / 2;
+
+                    drawW = cutW.Value;
+                    drawH = cutH.Value;
+
+                    cutW = origin.Width;
+                    cutH = origin.Height;
                 }
-                else
+
+                #region 创建缩略图
+
+                Image bitmap = new Bitmap(toWidth, toHeight);
+
+                Graphics g = Graphics.FromImage(bitmap);
+
+                g.CompositingQuality = CompositingQuality.HighQuality;
+
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+
+                g.SmoothingMode = SmoothingMode.HighQuality;
+
+                g.Clear(Color.White);
+
+                g.DrawImage(origin, new Rectangle(drawX, drawY, drawW, drawH), new Rectangle(cutX.Value, cutY.Value, cutW.Value, cutH.Value), GraphicsUnit.Pixel);
+
+                #endregion
+
+                #region 保存缩略图
+
+                try
                 {
-                    ImageCodecInfo imageEncoder = GetEncoderInfo(ImageFormat.Jpeg);
+                    if (origin.RawFormat.Guid == ImageFormat.Gif.Guid)
+                    {
+                        bitmap.Save(savePath, ImageFormat.Gif);
+                    }
+                    else
+                    {
+                        ImageCodecInfo imageEncoder = GetEncoderInfo(ImageFormat.Jpeg);
 
-                    bitmap.Save(savePath, imageEncoder, defaultEncoderParams);
+                        bitmap.Save(savePath, imageEncoder, defaultEncoderParams);
+                    }
+                    result.FilePath = savePath.GetFilePathByRawDirection();
                 }
-                result.FilePath = savePath.GetFilePathByRawDirection();
-            }
-            catch
-            {
-                result.Message = "裁剪图片保存失败";
-                throw;
-            }
-            finally
-            {
-                origin.Dispose();
+                catch
+                {
+                    result.Message = "裁剪图片保存失败";
+                    throw;
+                }
+                finally
+                {
+                    origin.Dispose();
 
-                bitmap.Dispose();
+                    bitmap.Dispose();
 
-                g.Dispose();
+                    g.Dispose();
+                }
+
+                #endregion
             }
-
-            #endregion
 
             return result;
         }
@@ -572,7 +598,7 @@ namespace Td.Kylin.Files.Core
             {
                 using (FileStream fs = File.Create(rawFilePath))
                 {
-                   file.CopyToAsync(fs).Wait();
+                    file.CopyToAsync(fs).Wait();
                 }
 
                 result.FilePath = absFileName;

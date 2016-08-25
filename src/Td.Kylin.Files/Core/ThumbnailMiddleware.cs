@@ -76,7 +76,7 @@ namespace Td.Kylin.Files.Core
                 int thumbHeight = int.Parse(m.Groups["height"].Value);
 
                 //根据指定规格生成缩略图
-                orginPhysicalPath.ImageCrop(physicalPath, thumbWidth, thumbHeight, null, null, null, null, false);
+                orginPhysicalPath.ImageCrop(physicalPath, thumbWidth, thumbHeight, true, null, null, null, null, false);
             }
             catch
             {
