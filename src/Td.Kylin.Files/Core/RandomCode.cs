@@ -19,7 +19,29 @@ namespace Td.Kylin.Files.Core
 
             if (randomLen < 1) randomLen = 0;
 
-            code += Get("0123456789", randomLen);
+            if (randomLen > 0)
+            {
+                code += Get("0123456789", randomLen);
+            }
+
+            return code;
+        }
+
+        /// <summary>
+        /// 生成随机码（按当前时间）
+        /// </summary>
+        /// <param name="randomLen">在时间（毫秒）后加入的随机数长度</param>
+        /// <returns></returns>
+        public static string GetTimeString(int randomLen = 0)
+        {
+            var code = DateTime.Now.ToString("HHmmssfff");
+
+            if (randomLen < 1) randomLen = 0;
+
+            if (randomLen > 0)
+            {
+                code += Get("0123456789", randomLen);
+            }
 
             return code;
         }

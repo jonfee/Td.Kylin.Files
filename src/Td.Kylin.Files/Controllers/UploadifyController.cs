@@ -19,7 +19,7 @@ namespace Td.Kylin.Files.Controllers
         /// <summary>
         /// Base64文件内容检测正则
         /// </summary>
-        private static Regex _regexBase64 = new Regex(@"^(?:(data:[^;]+;base64,)?)(?<content>.+)$", RegexOptions.IgnoreCase);
+        private static Regex _regexBase64 = new Regex(@"^(?:data:[^;]+;base64,)(?<content>.+)$", RegexOptions.IgnoreCase);
 
         /// <summary>
         /// 上传文件

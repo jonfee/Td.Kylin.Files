@@ -670,7 +670,7 @@ namespace Td.Kylin.Files.Core
 
             path = path.AppendFileDirectoryByDate();
 
-            if (string.IsNullOrWhiteSpace(name)) name = RandomCode.GetDtString(3);
+            if (string.IsNullOrWhiteSpace(name)) name = RandomCode.GetDtString(6);
 
             StringBuilder fileName = new StringBuilder(path);
 
@@ -706,7 +706,7 @@ namespace Td.Kylin.Files.Core
 
             if (path.EndsWith("/")) path = path.TrimEnd('/');//移除尾部"/"字符
 
-            if (string.IsNullOrWhiteSpace(name)) name = RandomCode.GetDtString(3);
+            if (string.IsNullOrWhiteSpace(name)) name = RandomCode.GetTimeString(6);
 
             if (extension.StartsWith(".")) extension = extension.TrimStart('.');
 
@@ -731,7 +731,7 @@ namespace Td.Kylin.Files.Core
 
             StringBuilder fileName = new StringBuilder(path);
 
-            fileName.AppendFormat("/{0}/{1}/{2}", DateTime.Now.Year, DateTime.Now.Month.ToString().PadLeft(2, '0'), DateTime.Now.Day.ToString().PadLeft(2, '0'));
+            fileName.Append(DateTime.Now.ToString("/yyyy/MM/dd"));
 
             return fileName.ToString();
         }
