@@ -256,13 +256,14 @@ namespace Td.Kylin.Files.Core
         /// <param name="cutW">切割的宽度</param>
         /// <param name="cutH">切割的高度</param>
         /// <param name="cut">是否切割多余部分，为 False 则保留原图所有部分，不足的部分填白。</param>
-        public static UploadResult ImageCrop(this string filePath, string savePath, int toWidth, int toHeight, bool lessOrEqualOrginSize, int? cutX, int? cutY, int? cutW, int? cutH, bool cut)
+        /// /// <param name="keepToSize">是否始终保留指定的缩略图尺寸</param>
+        public static UploadResult ImageCrop(this string filePath, string savePath, int toWidth, int toHeight, bool lessOrEqualOrginSize, int? cutX, int? cutY, int? cutW, int? cutH, bool cut, bool keepToSize = false)
         {
             try
             {
                 Image origin = Image.FromFile(filePath);
 
-                return origin.ImageCrop(savePath, toWidth, toHeight, lessOrEqualOrginSize, cutX, cutY, cutW, cutH, cut);
+                return origin.ImageCrop(savePath, toWidth, toHeight, lessOrEqualOrginSize, cutX, cutY, cutW, cutH, cut, keepToSize);
             }
             catch
             {
@@ -286,7 +287,8 @@ namespace Td.Kylin.Files.Core
         /// <param name="cutW">切割的宽度</param>
         /// <param name="cutH">切割的高度</param>
         /// <param name="cut">是否切割多余部分，为 False 则保留原图所有部分，不足的部分填白。</param>
-        public static UploadResult ImageCrop(this Image origin, string savePath, int toWidth, int toHeight, bool lessOrEqualOrginSize, int? cutX, int? cutY, int? cutW, int? cutH, bool cut)
+        /// <param name="keepToSize">是否始终保留指定的缩略图尺寸</param>
+        public static UploadResult ImageCrop(this Image origin, string savePath, int toWidth, int toHeight, bool lessOrEqualOrginSize, int? cutX, int? cutY, int? cutW, int? cutH, bool cut, bool keepToSize = false)
         {
             if (origin == null) throw new ArgumentNullException(nameof(origin), "缩略图原始文件不能为空");
 
@@ -311,8 +313,14 @@ namespace Td.Kylin.Files.Core
 
             #region 校正压缩尺寸
 
+            int thumbWidth = toWidth;   //缩略图宽
+            int thumbHeight = toHeight; //缩略图高
+
+            //是否按最大连等比缩放后裁剪多余部分
+            bool isMaxThumbAfterCut = cut && (!cutX.HasValue || !cutY.HasValue || !cutW.HasValue || !cutH.HasValue);
+
             //压缩宽高均为0时，保持原图尺寸
-            if (toWidth <= 0 && toWidth <= 0)
+            if (toWidth <= 0 && toHeight <= 0)
             {
                 toWidth = origin.Width;
                 toHeight = origin.Height;
@@ -340,11 +348,25 @@ namespace Td.Kylin.Files.Core
                 }
                 else if (multipleW > multipleH)
                 {
-                    toWidth = (int)(origin.Width * multipleH);
+                    if (isMaxThumbAfterCut)
+                    {
+                        toHeight = (int)(origin.Height * multipleW);
+                    }
+                    else
+                    {
+                        toWidth = (int)(origin.Width * multipleH);
+                    }
                 }
                 else if (multipleH > multipleW)
                 {
-                    toHeight = (int)(origin.Height * multipleW);
+                    if (isMaxThumbAfterCut)
+                    {
+                        toWidth = (int)(origin.Width * multipleH);
+                    }
+                    else
+                    {
+                        toHeight = (int)(origin.Height * multipleW);
+                    }
                 }
             }
 
@@ -363,6 +385,7 @@ namespace Td.Kylin.Files.Core
                     if (origin.Width < toWidth && origin.Height < toHeight)
                     {
                         cutW = origin.Width; cutH = origin.Height; cutX = cutY = 0;
+
                         drawX = (toWidth - origin.Width) / 2;
                         drawY = (toHeight - origin.Height) / 2;
 
@@ -412,6 +435,7 @@ namespace Td.Kylin.Files.Core
                         }
                     }
                 }
+
                 if (!cut)
                 {
                     drawX = (toWidth - cutW.Value) / 2;
@@ -424,9 +448,16 @@ namespace Td.Kylin.Files.Core
                     cutH = origin.Height;
                 }
 
+                //校正最终的缩略图应保持的宽高
+                if (!keepToSize)
+                {
+                    thumbWidth = toWidth;
+                    thumbHeight = toHeight;
+                }
+
                 #region 创建缩略图
 
-                Image bitmap = new Bitmap(toWidth, toHeight);
+                Image bitmap = new Bitmap(thumbWidth, thumbHeight);
 
                 Graphics g = Graphics.FromImage(bitmap);
 

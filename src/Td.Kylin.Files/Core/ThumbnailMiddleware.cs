@@ -49,7 +49,7 @@ namespace Td.Kylin.Files.Core
                 string filename = Path.GetFileName(reqUrl);
 
                 //检测文件是否为图片
-                string regPattern = string.Format(@"^{0}w(?<width>\d+)h(?<height>\d+)_([^\.]*\.)+({1})$", ThumbnailHelper.StartTag, _imageExtensions);
+                string regPattern = string.Format(@"^(?<thumbTag>{0})w(?<width>\d+)h(?<height>\d+)_([^\.]*\.)+({1})$", ThumbnailHelper.StartTagPattern, _imageExtensions);
 
                 //缩略图文件名规则
                 Regex reg = new Regex(regPattern, RegexOptions.IgnoreCase);
@@ -75,8 +75,14 @@ namespace Td.Kylin.Files.Core
                 //缩略图高
                 int thumbHeight = int.Parse(m.Groups["height"].Value);
 
+                //缩略标记
+                string thumbTag = m.Groups["thumbTag"].Value.ToLower();
+
+                //是否需要裁剪
+                bool hasCut = thumbTag.Equals(ThumbnailHelper.StartThumbCutTag);
+
                 //根据指定规格生成缩略图
-                orginPhysicalPath.ImageCrop(physicalPath, thumbWidth, thumbHeight, true, null, null, null, null, false);
+                orginPhysicalPath.ImageCrop(physicalPath, thumbWidth, thumbHeight, true, null, null, null, null, hasCut, true);
             }
             catch
             {

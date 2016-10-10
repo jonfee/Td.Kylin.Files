@@ -10,18 +10,28 @@ namespace Td.Kylin.Files.Core
         /// <summary>
         /// 缩略图起始标记
         /// </summary>
-        public const string StartTag = "t_";
+        public const string StartThumbTag = "t_";
+
+        /// <summary>
+        /// 缩略图带裁剪起始标记
+        /// </summary>
+        public const string StartThumbCutTag = "tc_";
+
+        /// <summary>
+        /// 缩略图起始标记正则模式字符串
+        /// </summary>
+        public const string StartTagPattern = "tc?_";
 
         /// <summary>
         /// 获取缩略图路径
         /// </summary>
         /// <param name="orginImagePath">图片原图路径</param>
         /// <returns></returns>
-        public static string GetThumbnailPath(string orginImagePath, int width, int height)
+        public static string GetThumbnailPath(string orginImagePath, int width, int height, bool cut = false)
         {
             if (string.IsNullOrWhiteSpace(orginImagePath)) return string.Empty;
 
-            string thumbTag = string.Format(@"{0}w{1}h{2}_", StartTag, width, height);
+            string thumbTag = string.Format(@"{0}w{1}h{2}_", cut ? StartThumbCutTag : StartThumbTag, width, height);
 
             //相对路径规则
             Regex absPathReg = new Regex(@"^(?<begin>/?.+?/)(?<name>.+?)(?<extension>\.[^\.]+)$", RegexOptions.IgnoreCase);
@@ -55,7 +65,7 @@ namespace Td.Kylin.Files.Core
         {
             if (string.IsNullOrWhiteSpace(thumbnailPath)) return string.Empty;
 
-            string strPattern = string.Format(@"{0}w\d+h\d+_", StartTag);
+            string strPattern = string.Format(@"{0}w\d+h\d+_", StartTagPattern);
 
             Regex reg = new Regex(strPattern, RegexOptions.IgnoreCase);
 
