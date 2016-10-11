@@ -372,139 +372,136 @@ namespace Td.Kylin.Files.Core
 
             #endregion
 
-            if (origin.Width == toWidth && origin.Height == toHeight)
+            int drawX = 0; int drawY = 0; int drawW = toWidth; int drawH = toHeight;
+            if (!cutX.HasValue || !cutY.HasValue || !cutW.HasValue || !cutH.HasValue)
             {
-                origin.Save(savePath);
-                result.FilePath = savePath.GetFilePathByRawDirection();
-            }
-            else
-            {
-                int drawX = 0; int drawY = 0; int drawW = toWidth; int drawH = toHeight;
-                if (!cutX.HasValue || !cutY.HasValue || !cutW.HasValue || !cutH.HasValue)
+                if (origin.Width < toWidth && origin.Height < toHeight)
                 {
-                    if (origin.Width < toWidth && origin.Height < toHeight)
+                    cutW = origin.Width; cutH = origin.Height; cutX = cutY = 0;
+
+                    drawX = (toWidth - origin.Width) / 2;
+                    drawY = (toHeight - origin.Height) / 2;
+
+                    drawW = origin.Width; drawH = origin.Height;
+
+                }
+                else
+                {
+                    double multipleWidth = (double)origin.Width / (double)toWidth;
+                    double multipleHeight = (double)origin.Height / (double)toHeight;
+
+                    if (multipleWidth < multipleHeight)
                     {
-                        cutW = origin.Width; cutH = origin.Height; cutX = cutY = 0;
-
-                        drawX = (toWidth - origin.Width) / 2;
-                        drawY = (toHeight - origin.Height) / 2;
-
-                        drawW = origin.Width; drawH = origin.Height;
-
-                    }
-                    else
-                    {
-                        double multipleWidth = (double)origin.Width / (double)toWidth;
-                        double multipleHeight = (double)origin.Height / (double)toHeight;
-
-                        if (multipleWidth < multipleHeight)
+                        if (cut)
                         {
-                            if (cut)
-                            {
-                                cutW = origin.Width;
-                                cutH = (int)(toHeight * multipleWidth);
+                            cutW = origin.Width;
+                            cutH = (int)(toHeight * multipleWidth);
 
-                                cutX = 0;
-                                cutY = (origin.Height - cutH) / 2;
-                            }
-                            else
-                            {
-                                cutH = toHeight;
-                                cutW = (int)(origin.Width / multipleHeight);
-
-                                cutX = cutY = 0;
-                            }
+                            cutX = 0;
+                            cutY = (origin.Height - cutH) / 2;
                         }
                         else
                         {
-                            if (cut)
-                            {
-                                cutW = (int)(toWidth * multipleHeight);
-                                cutH = origin.Height;
+                            cutH = toHeight;
+                            cutW = (int)(origin.Width / multipleHeight);
 
-                                cutX = (origin.Width - cutW) / 2;
-                                cutY = 0;
-                            }
-                            else
-                            {
-                                cutH = (int)(origin.Height / multipleWidth);
-                                cutW = toWidth;
-
-                                cutX = cutY = 0;
-                            }
+                            cutX = cutY = 0;
                         }
-                    }
-                }
-
-                if (!cut)
-                {
-                    drawX = (toWidth - cutW.Value) / 2;
-                    drawY = (toHeight - cutH.Value) / 2;
-
-                    drawW = cutW.Value;
-                    drawH = cutH.Value;
-
-                    cutW = origin.Width;
-                    cutH = origin.Height;
-                }
-
-                //校正最终的缩略图应保持的宽高
-                if (!keepToSize)
-                {
-                    thumbWidth = toWidth;
-                    thumbHeight = toHeight;
-                }
-
-                #region 创建缩略图
-
-                Image bitmap = new Bitmap(thumbWidth, thumbHeight);
-
-                Graphics g = Graphics.FromImage(bitmap);
-
-                g.CompositingQuality = CompositingQuality.HighQuality;
-
-                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-
-                g.SmoothingMode = SmoothingMode.HighQuality;
-
-                g.Clear(Color.White);
-
-                g.DrawImage(origin, new Rectangle(drawX, drawY, drawW, drawH), new Rectangle(cutX.Value, cutY.Value, cutW.Value, cutH.Value), GraphicsUnit.Pixel);
-
-                #endregion
-
-                #region 保存缩略图
-
-                try
-                {
-                    if (origin.RawFormat.Guid == ImageFormat.Gif.Guid)
-                    {
-                        bitmap.Save(savePath, ImageFormat.Gif);
                     }
                     else
                     {
-                        ImageCodecInfo imageEncoder = GetEncoderInfo(ImageFormat.Jpeg);
+                        if (cut)
+                        {
+                            cutW = (int)(toWidth * multipleHeight);
+                            cutH = origin.Height;
 
-                        bitmap.Save(savePath, imageEncoder, defaultEncoderParams);
+                            cutX = (origin.Width - cutW) / 2;
+                            cutY = 0;
+                        }
+                        else
+                        {
+                            cutH = (int)(origin.Height / multipleWidth);
+                            cutW = toWidth;
+
+                            cutX = cutY = 0;
+                        }
                     }
-                    result.FilePath = savePath.GetFilePathByRawDirection();
                 }
-                catch
-                {
-                    result.Message = "裁剪图片保存失败";
-                    throw;
-                }
-                finally
-                {
-                    origin.Dispose();
-
-                    bitmap.Dispose();
-
-                    g.Dispose();
-                }
-
-                #endregion
             }
+
+            //校正最终的缩略图应保持的宽高
+            if (!keepToSize)
+            {
+                thumbWidth = toWidth;
+                thumbHeight = toHeight;
+            }
+
+            if (!cut)
+            {
+                drawX = (thumbWidth - cutW.Value) / 2;
+                drawY = (thumbWidth - cutH.Value) / 2;
+
+                drawW = cutW.Value;
+                drawH = cutH.Value;
+
+                cutW = origin.Width;
+                cutH = origin.Height;
+            }
+            else
+            {
+                if (thumbWidth > toWidth) drawX = (thumbWidth - toWidth) / 2;
+                if (thumbHeight > toHeight) drawY = (thumbHeight - toHeight) / 2;
+            }
+
+            #region 创建缩略图
+
+            Image bitmap = new Bitmap(thumbWidth, thumbHeight);
+
+            Graphics g = Graphics.FromImage(bitmap);
+
+            g.CompositingQuality = CompositingQuality.HighQuality;
+
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+
+            g.SmoothingMode = SmoothingMode.HighQuality;
+
+            g.Clear(Color.White);
+
+            g.DrawImage(origin, new Rectangle(drawX, drawY, drawW, drawH), new Rectangle(cutX.Value, cutY.Value, cutW.Value, cutH.Value), GraphicsUnit.Pixel);
+
+            #endregion
+
+            #region 保存缩略图
+
+            try
+            {
+                if (origin.RawFormat.Guid == ImageFormat.Gif.Guid)
+                {
+                    bitmap.Save(savePath, ImageFormat.Gif);
+                }
+                else
+                {
+                    ImageCodecInfo imageEncoder = GetEncoderInfo(ImageFormat.Jpeg);
+
+                    bitmap.Save(savePath, imageEncoder, defaultEncoderParams);
+                }
+                result.FilePath = savePath.GetFilePathByRawDirection();
+            }
+            catch
+            {
+                result.Message = "裁剪图片保存失败";
+                throw;
+            }
+            finally
+            {
+                origin.Dispose();
+
+                bitmap.Dispose();
+
+                g.Dispose();
+            }
+
+            #endregion
 
             return result;
         }
