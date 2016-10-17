@@ -206,7 +206,7 @@ namespace Td.Kylin.Files.Core
                 {
                     saveMark = "压缩尺寸（含质量）存储";
 
-                    image.ImageCrop(rawFilePath, maxWidth, maxHeight, true, null, null, null, null, cutIfOut);
+                    image.ImageCrop(rawFilePath, maxWidth, maxHeight, null, null, null, null, cutIfOut, true);
                 }
                 else
                 {
@@ -257,13 +257,13 @@ namespace Td.Kylin.Files.Core
         /// <param name="cutH">切割的高度</param>
         /// <param name="cut">是否切割多余部分，为 False 则保留原图所有部分，不足的部分填白。</param>
         /// /// <param name="keepToSize">是否始终保留指定的缩略图尺寸</param>
-        public static UploadResult ImageCrop(this string filePath, string savePath, int toWidth, int toHeight, bool lessOrEqualOrginSize, int? cutX, int? cutY, int? cutW, int? cutH, bool cut, bool keepToSize = false)
+        public static UploadResult ImageCrop(this string filePath, string savePath, int toWidth, int toHeight, int? cutX, int? cutY, int? cutW, int? cutH, bool cut, bool? keepToSize = null, bool? lessOrEqualOrginSize = null)
         {
             try
             {
                 Image origin = Image.FromFile(filePath);
 
-                return origin.ImageCrop(savePath, toWidth, toHeight, lessOrEqualOrginSize, cutX, cutY, cutW, cutH, cut, keepToSize);
+                return origin.ImageCrop(savePath, toWidth, toHeight, cutX, cutY, cutW, cutH, cut, keepToSize, lessOrEqualOrginSize);
             }
             catch
             {
@@ -288,7 +288,7 @@ namespace Td.Kylin.Files.Core
         /// <param name="cutH">切割的高度</param>
         /// <param name="cut">是否切割多余部分，为 False 则保留原图所有部分，不足的部分填白。</param>
         /// <param name="keepToSize">是否始终保留指定的缩略图尺寸</param>
-        public static UploadResult ImageCrop(this Image origin, string savePath, int toWidth, int toHeight, bool lessOrEqualOrginSize, int? cutX, int? cutY, int? cutW, int? cutH, bool cut, bool keepToSize = false)
+        public static UploadResult ImageCrop(this Image origin, string savePath, int toWidth, int toHeight, int? cutX, int? cutY, int? cutW, int? cutH, bool cut, bool? keepToSize = null, bool? lessOrEqualOrginSize = null)
         {
             if (origin == null) throw new ArgumentNullException(nameof(origin), "缩略图原始文件不能为空");
 
@@ -328,7 +328,7 @@ namespace Td.Kylin.Files.Core
             else
             {
                 //必须小于或等于原图尺寸限制时处理
-                if (lessOrEqualOrginSize)
+                if ((!keepToSize.HasValue || !keepToSize.Value) && (!lessOrEqualOrginSize.HasValue || lessOrEqualOrginSize.Value))
                 {
                     if (toWidth > origin.Width) toWidth = origin.Width;//缩略图宽最大为原始图片宽
                     if (toHeight > origin.Height) toHeight = origin.Height;//缩略图高最大为原始图片高
@@ -370,6 +370,18 @@ namespace Td.Kylin.Files.Core
                 }
             }
 
+            //校正最终的缩略图应保持的宽高
+            if (keepToSize.HasValue && keepToSize.Value)
+            {
+                if (thumbWidth <= 0) thumbWidth = toWidth;
+                if (thumbHeight <= 0) thumbHeight = toHeight;
+            }
+            else
+            {
+                thumbWidth = toWidth;
+                thumbHeight = toHeight;
+            }
+
             #endregion
 
             int drawX = 0; int drawY = 0; int drawW = toWidth; int drawH = toHeight;
@@ -408,7 +420,7 @@ namespace Td.Kylin.Files.Core
                             cutX = cutY = 0;
                         }
                     }
-                    else
+                    else if (multipleHeight > multipleWidth)
                     {
                         if (cut)
                         {
@@ -426,14 +438,12 @@ namespace Td.Kylin.Files.Core
                             cutX = cutY = 0;
                         }
                     }
+                    else
+                    {
+                        cut = false;
+                        cutW = thumbWidth; cutH = thumbHeight; cutX = cutY = 0;
+                    }
                 }
-            }
-
-            //校正最终的缩略图应保持的宽高
-            if (!keepToSize)
-            {
-                thumbWidth = toWidth;
-                thumbHeight = toHeight;
             }
 
             if (!cut)

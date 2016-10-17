@@ -10,17 +10,22 @@ namespace Td.Kylin.Files.Core
         /// <summary>
         /// 缩略图起始标记
         /// </summary>
-        public const string StartThumbTag = "t_";
+        public const string START_THUMBNAIL_TAG = "t_";
 
         /// <summary>
         /// 缩略图带裁剪起始标记
         /// </summary>
-        public const string StartThumbCutTag = "tc_";
+        public const string START_THUMBNAIL_CUT_TAG = "tc_";
 
         /// <summary>
         /// 缩略图起始标记正则模式字符串
         /// </summary>
-        public const string StartTagPattern = "tc?_";
+        public const string START_TAG_PATTERN = "tc?_";
+
+        /// <summary>
+        /// 是否固定尺寸正则模式字符串
+        /// </summary>
+        public const string SIZE_FIX_PATTERN = "fix_";
 
         /// <summary>
         /// 获取缩略图路径
@@ -31,7 +36,7 @@ namespace Td.Kylin.Files.Core
         {
             if (string.IsNullOrWhiteSpace(orginImagePath)) return string.Empty;
 
-            string thumbTag = string.Format(@"{0}w{1}h{2}_", cut ? StartThumbCutTag : StartThumbTag, width, height);
+            string thumbTag = string.Format(@"{0}({1})?w{2}h{3}_", cut ? START_THUMBNAIL_CUT_TAG : START_THUMBNAIL_TAG, SIZE_FIX_PATTERN, width, height);
 
             //相对路径规则
             Regex absPathReg = new Regex(@"^(?<begin>/?.+?/)(?<name>.+?)(?<extension>\.[^\.]+)$", RegexOptions.IgnoreCase);
@@ -65,7 +70,7 @@ namespace Td.Kylin.Files.Core
         {
             if (string.IsNullOrWhiteSpace(thumbnailPath)) return string.Empty;
 
-            string strPattern = string.Format(@"{0}w\d+h\d+_", StartTagPattern);
+            string strPattern = string.Format(@"{0}({1})?w\d+h\d+_", START_TAG_PATTERN, SIZE_FIX_PATTERN);
 
             Regex reg = new Regex(strPattern, RegexOptions.IgnoreCase);
 
