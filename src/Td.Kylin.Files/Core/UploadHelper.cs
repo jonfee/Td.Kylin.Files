@@ -449,7 +449,7 @@ namespace Td.Kylin.Files.Core
             if (!cut)
             {
                 drawX = (thumbWidth - cutW.Value) / 2;
-                drawY = (thumbWidth - cutH.Value) / 2;
+                drawY = (thumbHeight - cutH.Value) / 2;
 
                 drawW = cutW.Value;
                 drawH = cutH.Value;
